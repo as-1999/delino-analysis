@@ -5,6 +5,13 @@ import json
 
 class Scraper:
     def __init__(self, correntCity, pageContent, dic, url, file_path) -> None:
+        '''
+        :param correntCity: the city that the restaurant is in
+        :param pageContent: the page content of the restaurant
+        :param dic: a dictionary that contains the menu, comment and info of the restaurant
+        :param url: the url of the restaurant
+        :param file_path: the path of the file that the data will be saved in
+        '''
         self.progress = None
         self.scrapeTask = None
         self.url = url
@@ -17,6 +24,11 @@ class Scraper:
 
         
     def _detaile_extractor(self, pageContent, dic) -> dict:
+        '''
+        :param pageContent: the page content of the restaurant
+        :param dic: a dictionary that contains the menu, comment and info of the restaurant
+        :return: a dictionary that contains the data of the restaurant
+        '''
         data = {
             'id': str(uuid1().hex),
             'city': self.correntCity,
@@ -49,6 +61,10 @@ class Scraper:
 
     @staticmethod
     def _title_ex(content: element.Tag) -> str|None:
+        '''
+        :param content: the page content of the restaurant
+        :return: the title of the restaurant
+        '''
         try:
             return content.find('h1', {"class", "rest-title"}).text.strip()
         except Exception as error:
@@ -56,6 +72,10 @@ class Scraper:
 
     @staticmethod
     def _rate_ex(content: element.Tag) -> float|None:
+        '''
+        :param content: the page content of the restaurant
+        :return: the rate of the restaurant
+        '''
         try:
             return float(content.find('b').text.strip())
         except Exception as error:
@@ -63,6 +83,10 @@ class Scraper:
 
     @staticmethod
     def _total_review_ex(content: element.Tag) -> int|None:
+        '''
+        :param content: the page content of the restaurant
+        :return: the total number of reviews of the restaurant
+        '''
         try:
             return int(content.find('span').text.strip())
         except Exception as error:
@@ -70,6 +94,10 @@ class Scraper:
     
     @staticmethod
     def _delivery_time_ex(content: element.Tag) -> str|None:
+        '''
+        :param content: the page content of the restaurant
+        :return: the delivery time of the restaurant
+        '''
         try:
             text = content.find('b').text.strip()
             return text.replace(' تا ', ' _ ').replace(' دقیقه', '')
@@ -78,6 +106,10 @@ class Scraper:
 
     @staticmethod
     def _district_ex(content: element.Tag) -> str|None:
+        '''
+        :param content: the page content of the restaurant
+        :return: the district of the restaurant
+        '''
         try:
             return content.find('div', {"class", "short-address"}).text.strip()
         except Exception as error:
@@ -85,6 +117,11 @@ class Scraper:
 
     @staticmethod
     def _menu_ex(content: element.Tag, food_item_ex) -> dict|None:
+        '''
+        :param content: the page content of the restaurant
+        :param food_item_ex: a function that extracts the food item
+        :return: the menu of the restaurant
+        '''
         try:
             menu = {}
             sections = content.find_all('section', {"class", "food-list"})
@@ -99,6 +136,10 @@ class Scraper:
     
     @staticmethod
     def __food_item_ex(content: element.Tag) -> dict:
+        '''
+        :param content: the page content of the restaurant
+        :return: the food item of the restaurant
+        '''
         food = None
         try:
             food = {}
@@ -113,6 +154,10 @@ class Scraper:
 
     @staticmethod
     def _overall_summary_ex(content: element.Tag) -> dict:
+        '''
+        :param content: the page content of the restaurant
+        :return: the overall summary of the restaurant
+        '''
         dictedReview = None
         try:
             category = ['good', 'neutral', 'bad']
@@ -126,6 +171,10 @@ class Scraper:
         
     @staticmethod
     def _address_ex(content: element.Tag) -> str|None:
+        '''
+        :param content: the page content of the restaurant
+        :return: the address of the restaurant
+        '''
         try:
             return content.find('span').text.strip()
         except Exception as error:
@@ -133,6 +182,10 @@ class Scraper:
     
     @staticmethod
     def _coordinates_ex(content: element.Tag) -> list|None:
+        '''
+        :param content: the page content of the restaurant
+        :return: the coordinates of the restaurant
+        '''
         try:
             coordinates = content.find('div', {"class", "map-holder"}).find('div')['style'].split('|')[1]
             coordinates = coordinates[:len(coordinates)-2].split(',')
@@ -142,6 +195,10 @@ class Scraper:
     
     @staticmethod
     def _type_ex(content: element.Tag) -> list|None:
+        '''
+        :param content: the page content of the restaurant
+        :return: the type of the restaurant
+        '''
         try:
             restTypes = content.find('ul').find_all('li')[-1].find_all('a')
             for i in range(0, len(restTypes)):
@@ -152,6 +209,10 @@ class Scraper:
     
     @staticmethod
     def _service_hours_table_ex(content: element.Tag) -> dict|None:
+        '''
+        :param content: the page content of the restaurant
+        :return: the service hours table of the restaurant
+        '''
         try:
             extractedTable = {}
             table = content.find('table', {"class", "table-whrs"})

@@ -137,6 +137,9 @@ class CrawlerTool(object):
             
 
     def _get_data_from_page(self, urls, city):
+        '''
+        this method get data from each page
+        '''
         for url in urls:
             self.driver.get(url)
             try:
