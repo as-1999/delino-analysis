@@ -1,37 +1,41 @@
 from typing import Generator
 from bs4 import element
 from uuid import uuid1
-
-import source.tools.logging_tools as lt
+import json
 
 class Scraper:
-    def __init__(self, correntCity: str) -> None:
+    def __init__(self, correntCity, pageContent, dic, url, file_path) -> None:
+        '''
+        :param correntCity: the city that the restaurant is in
+        :param pageContent: the page content of the restaurant
+        :param dic: a dictionary that contains the menu, comment and info of the restaurant
+        :param url: the url of the restaurant
+        :param file_path: the path of the file that the data will be saved in
+        '''
         self.progress = None
         self.scrapeTask = None
-        self.url = None
+        self.url = url
         self.correntCity = correntCity
+        self.file_path = file_path
+        with open(self.file_path, 'a') as file:
+            json.dump(self._detaile_extractor(pageContent, dic), file)
+            
 
-    def start(self, links:list , progress, task) -> Generator:
-        self.progress = progress
-        self.scrapeTask = task
-        for link in links:
-            self.url = link
-            yield self._detaile_extractor()
-            if not self.progress.finished:
-                self.progress.update(self.scrapeTask, advance=1.0)
-            else:
-                pass
 
-    def _detaile_extractor(self) -> dict:
+        
+    def _detaile_extractor(self, pageContent, dic) -> dict:
+        '''
+        :param pageContent: the page content of the restaurant
+        :param dic: a dictionary that contains the menu, comment and info of the restaurant
+        :return: a dictionary that contains the data of the restaurant
+        '''
         data = {
             'id': str(uuid1().hex),
             'city': self.correntCity,
             'link': self.url
         }
         try:
-            # this part must be overwritten befor run!
-            webRequest = wt.Web_request(url=self.url, browser='firefox')
-            pageContent = webRequest.web_page_geter(categorize=True,retry=True)
+            
             # restaurant introduction (cover) section
             rightSide = pageContent.find('div', {"class", "right-side"})
             leftSide = pageContent.find('div', {"class", "left-side"})
@@ -41,22 +45,26 @@ class Scraper:
             data['delivery_time'] = self._delivery_time_ex(leftSide.find('div', {"class", "mini-info"}))
             data['district'] = self._district_ex(rightSide)
             # restaurant menu section
-            data['menu'] = self._menu_ex(pageContent.find('div', {"class", "food-menu clearfix"}), self.__food_item_ex)
+            data['menu'] = self._menu_ex(dic['menu'].find('div', {"class", "food-menu clearfix"}), self.__food_item_ex)
             # restaurant reviews section
-            data['overall_summary'] = self._overall_summary_ex(pageContent.find('ul', {"class", "overall-summary"}))
+            data['overall_summary'] = self._overall_summary_ex(dic['comment'].find('ul', {"class", "overall-summary"}))
             # restaurant info section
-            infos = pageContent.find('div', {"class", "wrapper"}).find_all('section')
+            infos = dic['info'].find('div', {"class", "wrapper"}).find_all('section')
             data['address'] = self._address_ex(infos[0])
             data['coordinates'] = self._coordinates_ex(infos[0])
             data['types'] = self._type_ex(infos[1])
             data['service_hours_table'] = self._service_hours_table_ex(infos[2])
             return data
         except Exception as error:
-            lt.error(str(error))
+            
             return data
 
     @staticmethod
     def _title_ex(content: element.Tag) -> str|None:
+        '''
+        :param content: the page content of the restaurant
+        :return: the title of the restaurant
+        '''
         try:
             return content.find('h1', {"class", "rest-title"}).text.strip()
         except Exception as error:
@@ -64,6 +72,10 @@ class Scraper:
 
     @staticmethod
     def _rate_ex(content: element.Tag) -> float|None:
+        '''
+        :param content: the page content of the restaurant
+        :return: the rate of the restaurant
+        '''
         try:
             return float(content.find('b').text.strip())
         except Exception as error:
@@ -71,6 +83,10 @@ class Scraper:
 
     @staticmethod
     def _total_review_ex(content: element.Tag) -> int|None:
+        '''
+        :param content: the page content of the restaurant
+        :return: the total number of reviews of the restaurant
+        '''
         try:
             return int(content.find('span').text.strip())
         except Exception as error:
@@ -78,6 +94,10 @@ class Scraper:
     
     @staticmethod
     def _delivery_time_ex(content: element.Tag) -> str|None:
+        '''
+        :param content: the page content of the restaurant
+        :return: the delivery time of the restaurant
+        '''
         try:
             text = content.find('b').text.strip()
             return text.replace(' تا ', ' _ ').replace(' دقیقه', '')
@@ -86,6 +106,10 @@ class Scraper:
 
     @staticmethod
     def _district_ex(content: element.Tag) -> str|None:
+        '''
+        :param content: the page content of the restaurant
+        :return: the district of the restaurant
+        '''
         try:
             return content.find('div', {"class", "short-address"}).text.strip()
         except Exception as error:
@@ -93,9 +117,14 @@ class Scraper:
 
     @staticmethod
     def _menu_ex(content: element.Tag, food_item_ex) -> dict|None:
+        '''
+        :param content: the page content of the restaurant
+        :param food_item_ex: a function that extracts the food item
+        :return: the menu of the restaurant
+        '''
         try:
             menu = {}
-            sections = content.find_all('div', {"class", "food-menu clearfix"})
+            sections = content.find_all('section', {"class", "food-list"})
             for section in sections:
                 sectionName = section.find('h2').find('b').text.strip()
                 menu[sectionName] = []
@@ -107,11 +136,15 @@ class Scraper:
     
     @staticmethod
     def __food_item_ex(content: element.Tag) -> dict:
+        '''
+        :param content: the page content of the restaurant
+        :return: the food item of the restaurant
+        '''
         food = None
         try:
             food = {}
             item = content.find('div', {"class", "details-holder"})
-            food['name'] = item.find('h3')
+            food['name'] = item.find('h3').text.strip()
             food['ingredient'] = item.find('div', {"class", "ingredient"})['title'].strip()
             food['price'] = item.find('small').text.replace('تومان', '').strip()
             food['meal_badge'] = item.find('label', {"class", "meal-badge"})['title'].strip()
@@ -121,19 +154,27 @@ class Scraper:
 
     @staticmethod
     def _overall_summary_ex(content: element.Tag) -> dict:
+        '''
+        :param content: the page content of the restaurant
+        :return: the overall summary of the restaurant
+        '''
         dictedReview = None
         try:
             category = ['good', 'neutral', 'bad']
             reviews = content.find_all('li')
             dictedReview = {}
             for i in range(0, len(reviews)):
-                dictedReview[category[i]] = reviews[i].find('i')['style'].replace('width: ', '').strip()
+                dictedReview[category[i]] = int(reviews[i].find('span').text.replace(' نظر', '').strip())
             return dictedReview
         except Exception as error:
             return dictedReview
         
     @staticmethod
     def _address_ex(content: element.Tag) -> str|None:
+        '''
+        :param content: the page content of the restaurant
+        :return: the address of the restaurant
+        '''
         try:
             return content.find('span').text.strip()
         except Exception as error:
@@ -141,8 +182,12 @@ class Scraper:
     
     @staticmethod
     def _coordinates_ex(content: element.Tag) -> list|None:
+        '''
+        :param content: the page content of the restaurant
+        :return: the coordinates of the restaurant
+        '''
         try:
-            coordinates = content.find('div', {"class", "map-holder"}).find('div')['title'].split('|')[1]
+            coordinates = content.find('div', {"class", "map-holder"}).find('div')['style'].split('|')[1]
             coordinates = coordinates[:len(coordinates)-2].split(',')
             return [float(coordinate) for coordinate in coordinates]
         except Exception as error:
@@ -150,6 +195,10 @@ class Scraper:
     
     @staticmethod
     def _type_ex(content: element.Tag) -> list|None:
+        '''
+        :param content: the page content of the restaurant
+        :return: the type of the restaurant
+        '''
         try:
             restTypes = content.find('ul').find_all('li')[-1].find_all('a')
             for i in range(0, len(restTypes)):
@@ -160,6 +209,10 @@ class Scraper:
     
     @staticmethod
     def _service_hours_table_ex(content: element.Tag) -> dict|None:
+        '''
+        :param content: the page content of the restaurant
+        :return: the service hours table of the restaurant
+        '''
         try:
             extractedTable = {}
             table = content.find('table', {"class", "table-whrs"})
