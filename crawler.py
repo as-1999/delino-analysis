@@ -27,6 +27,9 @@ class CrawlerTool(object):
         self.file_path = file_path
         self._make_url()
     def _check_witch_browser(self, browser:str):
+        '''
+        this method check witch browser you want to use
+        '''
         match browser:
             case 'chrome':
                 service = ChromeService(executable_path=ChromeDriverManager().install())
@@ -48,6 +51,9 @@ class CrawlerTool(object):
                 raise ValueError('your chosen browser is not found! valid options:(chrome, firefox)')
 
     def _make_url(self):
+        '''
+        this method get url of all citys in delino.com
+        '''
         self.driver.get(self._url)
         delay = 3
         link_of_citys = '/html/body/div[2]/div[3]/div/div[1]/div/div/span/strong'
@@ -75,7 +81,9 @@ class CrawlerTool(object):
 
 
     def find(self, urls):
-        
+        '''
+        this method get urls of citys and find all items in each city
+        '''
         for url in urls:
             self.driver.get(urls[url])
             
