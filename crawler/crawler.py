@@ -18,7 +18,7 @@ from selenium.webdriver.firefox.service import Service as firefoxeService
 
 
 from bs4 import BeautifulSoup
-from scraper import Scraper
+from source.scraper import Scraper
 class CrawlerTool(object):
     
     def __init__(self, browser:str,file_path:str) -> None:
