@@ -1,7 +1,7 @@
 from typing import Generator
 from bs4 import element
 from uuid import uuid1
-import json
+from source.tools.json_tools import appender
 
 class Scraper:
     def __init__(self, correntCity, pageContent, dic, url, file_path) -> None:
@@ -17,8 +17,7 @@ class Scraper:
         self.url = url
         self.correntCity = correntCity
         self.file_path = file_path
-        with open(self.file_path, 'a') as file:
-            json.dump(self._detaile_extractor(pageContent, dic), file)
+        appender(self._detaile_extractor(pageContent, dic), 'data.json', self.file_path)
             
 
 
